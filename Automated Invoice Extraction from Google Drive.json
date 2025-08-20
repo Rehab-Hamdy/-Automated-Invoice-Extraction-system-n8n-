@@ -1,0 +1,399 @@
+{
+  "name": "Automated Invoice Extraction from Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1TLklnxGahrrlNa92NYpqci58OwV1kaVm",
+          "mode": "list",
+          "cachedResultName": "invoices",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1TLklnxGahrrlNa92NYpqci58OwV1kaVm"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -64
+      ],
+      "id": "9d215a12-697d-4b1b-8469-b08efaec4027",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "xjPg1dNnoF4loaq7",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        288,
+        -64
+      ],
+      "id": "1bd01990-f959-4cfd-b7ea-17629cc4d800",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "xjPg1dNnoF4loaq7",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a smart invoice extractor that works with OCR text extracted from PDF documents. The text may be in Arabic, English, or both. Your task is to extract structured data from the invoice text provided below.\n\nPlease extract the following fields if available. If a field is missing or unclear, respond with \"Not found\".\n\nOCR Text:\n{{ $json.text }}\n\nExtract the following invoice fields:\n\n\n1. **Invoice Number** — الرقم المرجعي أو رقم الفاتورة.\n2. **Invoice Date** — تاريخ الفاتورة.\n3. **Supplier/Vendor Name** — اسم الشركة أو المورد.\n4. **Buyer/Customer Name** — اسم العميل أو المشتري.\n5. **Total Amount** — إجمالي الفاتورة مع العملة (مثلاً: 1500 EGP or 200 SAR).\n6. **Items or Services Description** — قائمة العناصر أو الخدمات المذكورة في الفاتورة.\n7. **Tax Amount** — إذا كان هناك ضريبة مذكورة (مثلاً VAT أو ضريبة القيمة المضافة).\n8. **Phone Number** — أي رقم هاتف موجود.\n9. **Email Address** — البريد الإلكتروني إذا وُجد.\n10. **Address** — عنوان الشركة أو العميل.\n\nReturn the result in this JSON format:\n\n{\n  \"invoice_number\": \"\",\n  \"invoice_date\": \"\",\n  \"supplier_name\": \"\",\n  \"customer_name\": \"\",\n  \"total_amount\": \"\",\n  \"items_description\": \"\",\n  \"tax_amount\": \"\",\n  \"phone_number\": \"\",\n  \"email\": \"\",\n  \"address\": \"\",\n}\n",
+              "role": "system"
+            },
+            {
+              "content": "=here is the markdown text:{{ $json.pages[0].markdown }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        928,
+        -64
+      ],
+      "id": "0eddda46-394b-48fa-a99b-e90a4edd122b",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "4nVIo0cmyOrtZd7M",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mistralAi",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -64
+      ],
+      "id": "af1b0614-61b9-490c-b453-b7fdde750147",
+      "name": "Extract text",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "aa0GN51S2FIOU1nm",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "180y8bY5Blq5p40hxrCs7z2pU5TcLtgR4SptGGtVSdzc",
+          "mode": "list",
+          "cachedResultName": "invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/180y8bY5Blq5p40hxrCs7z2pU5TcLtgR4SptGGtVSdzc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/180y8bY5Blq5p40hxrCs7z2pU5TcLtgR4SptGGtVSdzc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "invoice_number": "={{ $json.original.invoice_number }}",
+            "invoice_date": "={{ $json.original.invoice_date }}",
+            "supplier_name": "={{ $json.original.supplier_name }}",
+            "customer_name": "={{ $json.original.customer_name }}",
+            "total_amount": "={{ $json.original.total_amount }}",
+            "items_description": "={{ $json.original.items_description }}",
+            "tax_amount": "={{ $json.original.tax_amount }}",
+            "phone_number": "={{ $json.original.phone_number }}",
+            "address": "={{ $json.original.address }}",
+            "email": "={{ $json.original.email }}"
+          },
+          "matchingColumns": [
+            "in"
+          ],
+          "schema": [
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "invoice_date",
+              "displayName": "invoice_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "supplier_name",
+              "displayName": "supplier_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "items_description",
+              "displayName": "items_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tax_amount",
+              "displayName": "tax_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "address",
+              "displayName": "address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "signature_or_stamp",
+              "displayName": "signature_or_stamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "valid",
+              "displayName": "valid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "errors",
+              "displayName": "errors",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "original",
+              "displayName": "original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1744,
+        -64
+      ],
+      "id": "70b10cfc-3092-4d0c-bd15-d37662c4368d",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AjkGDlFI5FZLb9sE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawData = $input.first().json.message.content;\n\n// Helper to remove $ or commas and trim\nfunction sanitizeNumber(value) {\n  if (typeof value === \"string\") {\n    return parseFloat(value.replace(/[^0-9.-]+/g, ''));\n  }\n  return parseFloat(value);\n}\n\nfunction sanitizeString(value) {\n  return value ? value.toString().trim() : \"\";\n}\n\n// Validation Helpers\nfunction isEmpty(value) {\n  return value === null || value === undefined || sanitizeString(value) === \"\";\n}\n\n// function isValidDate(date) {\n//   return !isNaN(Date.parse(date));\n// }\n\nfunction isValidEmail(email) {\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(sanitizeString(email));\n}\n\n\nfunction isValidPhone(phone) {\n  const cleaned = sanitizeString(phone).replace(/[^\\d+]/g, \"\"); // keep + and digits only\n  return /^\\+?\\d{7,15}$/.test(cleaned);\n}\n\n\n\n// Sanitize all inputs\nconst data = {\n  invoice_number: sanitizeString(rawData.invoice_number),\n  invoice_date: sanitizeString(rawData.invoice_date),\n  supplier_name: sanitizeString(rawData.supplier_name),\n  customer_name: sanitizeString(rawData.customer_name),\n  total_amount: sanitizeNumber(rawData.total_amount),\n  items_description: sanitizeString(rawData.items_description),\n  tax_amount: sanitizeNumber(rawData.tax_amount),\n  phone_number: sanitizeString(rawData.phone_number),\n  email: sanitizeString(rawData.email),\n  address: sanitizeString(rawData.address),\n};\n\nconst errors = [];\n\n// Validation checks\nif (isEmpty(data.invoice_number)) errors.push(\"Missing invoice number.\");\n// if (!isValidDate(data.invoice_date)) errors.push(\"Invalid invoice date.\");\nif (isEmpty(data.supplier_name)) errors.push(\"Missing supplier name.\");\nif (isEmpty(data.customer_name)) errors.push(\"Missing customer name.\");\nif (isNaN(data.total_amount) || data.total_amount <= 0) errors.push(\"Invalid total amount.\");\nif (isEmpty(data.items_description)) errors.push(\"Missing items description.\");\nif (isNaN(data.tax_amount) || data.tax_amount < 0) errors.push(\"Invalid tax amount.\");\nif (!isValidPhone(data.phone_number)) errors.push(\"Invalid phone number.\");\nif (!isValidEmail(data.email)) errors.push(\"Invalid email address.\");\nif (isEmpty(data.address)) errors.push(\"Missing address.\");\n\n// Final output\nreturn {\n  json: {\n    valid: errors.length === 0,\n    errors: errors,\n    original: data\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -64
+      ],
+      "id": "f8c481b8-53a6-4f58-af62-5a4993f2205a",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract text": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e2f190d4-260b-4e57-aba9-46585cf32259",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fd2d0a57fb18a2a9c120a78b04edf9ad747942f17835963c220c241c406a2f8f"
+  },
+  "id": "hMtUDs0vpjoWLMXI",
+  "tags": []
+}
